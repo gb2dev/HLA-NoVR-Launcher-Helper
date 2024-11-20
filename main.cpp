@@ -117,11 +117,12 @@ int main(int argc, char * argv[]){
 #endif
         }
     } else {
+        /*
         while (true) {
             std::cout << window_from_name("Half-Life: Alyx") << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(33));
         }
-        /*
+        */
 #ifdef _WIN32
         RECT rect;
         while (gameWindow == nullptr) {
@@ -146,6 +147,7 @@ int main(int argc, char * argv[]){
             ClientToScreen(gameWindow, reinterpret_cast<POINT*>(&rect.left));
             ClientToScreen(gameWindow, reinterpret_cast<POINT*>(&rect.right));
             std::cout << "geometry:" << rect.left << ":" << rect.top << ":" << (rect.right - rect.left) << ":" << (rect.bottom - rect.top) << std::endl;
+            std::cout << "escape:" << GetKeyState(VK_ESCAPE) << std::endl;
 #elif unix
         XSetTransientForHint(display, menuWindow, gameWindow);
         while (window_from_name("Half-Life: Alyx")) {
@@ -158,7 +160,6 @@ int main(int argc, char * argv[]){
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         std::cout << "exit" << std::endl;
-        */
     }
     return 0;
 }
