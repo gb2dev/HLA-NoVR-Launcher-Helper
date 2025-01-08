@@ -1,5 +1,6 @@
 #ifdef _WIN32
 #include <Windows.h>
+#include <tlhelp32.h>
 #elif unix
 #include <X11/Xlib.h>
 #include <cstring>
@@ -10,7 +11,50 @@
 #include <thread>
 #include <filesystem>
 
-#ifdef unix
+#ifdef _WIN32
+HWND GetWindowFromProcessID(DWORD processID) {
+    HWND hwnd = GetTopWindow(NULL);
+    while (hwnd) {
+        DWORD wndProcID = 0;
+        GetWindowThreadProcessId(hwnd, &wndProcID);
+        if (wndProcID == processID && IsWindowVisible(hwnd)) {
+            return hwnd;
+        }
+        hwnd = GetNextWindow(hwnd, GW_HWNDNEXT);
+    }
+    return NULL;
+}
+
+DWORD GetProcessIDByExeName(const std::string& exeName) {
+    DWORD processID = 0;
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(PROCESSENTRY32);
+    if (Process32First(snapshot, &pe)) {
+        do {
+            if (exeName == pe.szExeFile) {
+                processID = pe.th32ProcessID;
+                break;
+            }
+        } while (Process32Next(snapshot, &pe));
+    }
+
+    CloseHandle(snapshot);
+    return processID;
+}
+
+HWND getWindowByExe(std::string exeName) {
+    DWORD processID = GetProcessIDByExeName(exeName);
+    if (processID == 0) {
+        return NULL;
+    }
+    return GetWindowFromProcessID(processID);
+}
+#elif unix
 Display *display;
 
 Window window_from_name_search(Window current, char const *needle) {
@@ -68,7 +112,7 @@ int main(int argc, char * argv[]){
 #endif
     if (argc > 1) {
 #ifdef _WIN32
-        gameWindow = FindWindowA("SDL_app", "Half-Life: Alyx");
+        gameWindow = getWindowByExe("hlvr.exe");
 #elif unix
         gameWindow = window_from_name("Half-Life: Alyx");
 #endif
@@ -134,7 +178,7 @@ int main(int argc, char * argv[]){
                 return 0;
             } else {
 #ifdef _WIN32
-                gameWindow = FindWindowA("SDL_app", "Half-Life: Alyx");
+                gameWindow = getWindowByExe("hlvr.exe");
 #elif unix
                 gameWindow = window_from_name("Half-Life: Alyx");
 #endif
